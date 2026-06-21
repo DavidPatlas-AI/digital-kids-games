@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משחקים דיגיטליים לילדים</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Rubik', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        header {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            text-align: center;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: white;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: white;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 40px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .game {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .game:hover::before {
+            left: 100%;
+        }
+
+        .game:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .game-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .game-title {
+            font-size: 1.4em;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .game-description {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: white;
+            background: rgba(0,0,0,0.1);
+        }
+
+        .game-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .close {
+            color: #aaa;
+            float: left;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .memory-game {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            max-width: 400px;
+            margin: 20px auto;
+        }
+
+        .memory-card {
+            aspect-ratio: 1;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            color: white;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .memory-card.flipped {
+            background: white;
+            color: #333;
+            border: 2px solid #667eea;
+        }
+
+        .memory-card.matched {
+            background: #48bb78;
+            color: white;
+        }
+
+        .game-stats {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1.1em;
+        }
+
+        .tic-tac-toe {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            max-width: 300px;
+            margin: 20px auto;
+        }
+
+        .tic-cell {
+            aspect-ratio: 1;
+            background: #f7f7f7;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .tic-cell:hover {
+            background: #e8f4fd;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            
+            .game-container {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                padding: 20px 10px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 2% auto;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎮 משחקים דיגיטליים לילדים</h1>
+        <p class="subtitle">בואו נשחק ונלמד ביחד!</p>
+    </header>
+
+    <div class="game-container">
+        <div class="game" onclick="openGame('memory')">
+            <div class="game-icon">🧠</div>
+            <div class="game-title">משחק זיכרון</div>
+            <div class="game-description">מצאו את הזוגות הזהים ושפרו את הזיכרון</div>
+        </div>
+
+        <div class="game" onclick="openGame('puzzle')">
+            <div class="game-icon">🧩</div>
+            <div class="game-title">פאזל</div>
+            <div class="game-description">הרכיבו תמונות יפות במשחק פאזל דיגיטלי</div>
+        </div>
+
+        <div class="game" onclick="openGame('monopoly')">
+            <div class="game-icon">🏠</div>
+            <div class="game-title">מונופול</div>
+            <div class="game-description">משחק הנכסים הקלאסי בגרסה דיגיטלית</div>
+        </div>
+
+        <div class="game" onclick="openGame('rummikub')">
+            <div class="game-icon">🎯</div>
+            <div class="game-title">רמיקוב</div>
+            <div class="game-description">שחקו במשחק הקלפים הישראלי הפופולרי</div>
+        </div>
+
+        <div class="game" onclick="openGame('solitaire')">
+            <div class="game-icon">♠️</div>
+            <div class="game-title">סוליטר</div>
+            <div class="game-description">משחק הקלפים הקלאסי לשחקן יחיד</div>
+        </div>
+
+        <div class="game" onclick="openGame('bingo')">
+            <div class="game-icon">🎲</div>
+            <div class="game-title">בינגו</div>
+            <div class="game-description">שחקו בינגו דיגיטלי ונסו לזכות</div>
+        </div>
+
+        <div class="game" onclick="openGame('cards')">
+            <div class="game-icon">🃏</div>
+            <div class="game-title">קלפים</div>
+            <div class="game-description">משחקי קלפים שונים ומגוונים</div>
+        </div>
+
+        <div class="game" onclick="openGame('poker')">
+            <div class="game-icon">♥️</div>
+            <div class="game-title">פוקר</div>
+            <div class="game-description">משחק הפוקר המפורסם בגרסה מותאמת לילדים</div>
+        </div>
+
+        <div class="game" onclick="openGame('taki')">
+            <div class="game-icon">🌈</div>
+            <div class="game-title">טאקי</div>
+            <div class="game-description">המשחק הישראלי האהוב על כולם</div>
+        </div>
+
+        <div class="game" onclick="openGame('war')">
+            <div class="game-icon">⚔️</div>
+            <div class="game-title">מלחמה</div>
+            <div class="game-description">משחק קלפים פשוט ומהיר</div>
+        </div>
+    </div>
+
+    <!-- Modal for games -->
+    <div id="gameModal" class="game-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <div id="gameContent"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>© 2024 משחקים דיגיטליים לילדים - כל הזכויות שמורות</p>
+        <p>נוצר במיוחד לחוויית משחק בטוחה ומהנה</p>
+    </div>
+
+    <script>
+        // Global functions to avoid undefined errors
+        function closeModal() {
+            document.getElementById('gameModal').style.display = 'none';
+        }
+
+        function openGame(gameType) {
+            const gameContent = document.getElementById('gameContent');
+            document.getElementById('gameModal').style.display = 'block';
+
+            switch(gameType) {
+                case 'memory':
+                    openMemoryGame();
+                    break;
+                case 'puzzle':
+                    openPuzzleGame();
+                    break;
+                case 'monopoly':
+                    openMonopolyGame();
+                    break;
+                case 'rummikub':
+                    openRummikubGame();
+                    break;
+                case 'solitaire':
+                    openSolitaireGame();
+                    break;
+                case 'bingo':
+                    openBingoGame();
+                    break;
+                case 'cards':
+                    openCardsGame();
+                    break;
+                case 'poker':
+                    openPokerGame();
+                    break;
+                case 'taki':
+                    openTakiGame();
+                    break;
+                case 'war':
+                    openWarGame();
+                    break;
+            }
+        }
+
+        function openMemoryGame() {
+            const gameContent = document.getElementById('gameContent');
+            gameContent.innerHTML = `
+                <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">🧠 משחק זיכרון</h2>
+                <div class="game-stats">
+                    <span>זוגות שנמצאו: <span id="pairs">0</span>/8</span>
+                    <span style="margin-right: 20px;">צעדים: <span id="moves">0</span></span>
+                </div>
+                <div class="memory-game" id="memoryBoard"></div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="startMemoryGame()">משחק חדש</button>
+                </div>
+            `;
+            startMemoryGame();
+        }
+
+        function startMemoryGame() {
+            const emojis = ['🐱', '🐶', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼'];
+            const cards = [...emojis, ...emojis];
+            cards.sort(() => Math.random() - 0.5);
+
+            let flippedCards = [];
+            let matchedPairs = 0;
+            let moves = 0;
+
+            const board = document.getElementById('memoryBoard');
+            board.innerHTML = '';
+
+            cards.forEach((emoji, index) => {
+                const card = document.createElement('div');
+                card.className = 'memory-card';
+                card.dataset.emoji = emoji;
+                card.dataset.index = index;
+                card.innerHTML = '?';
+                
+                card.addEventListener('click', () => {
+                    if (flippedCards.length < 2 && !card.classList.contains('flipped') && !card.classList.contains('matched')) {
+                        card.classList.add('flipped');
+                        card.innerHTML = emoji;
+                        flippedCards.push(card);
+
+                        if (flippedCards.length === 2) {
+                            moves++;
+                            document.getElementById('moves').textContent = moves;
+
+                            if (flippedCards[0].dataset.emoji === flippedCards[1].dataset.emoji) {
+                                flippedCards[0].classList.add('matched');
+                                flippedCards[1].classList.add('matched');
+                                matchedPairs++;
+                                document.getElementById('pairs').textContent = matchedPairs;
+                                flippedCards = [];
+
+                                if (matchedPairs === 8) {
+                                    setTimeout(() => {
+                                        alert(`🎉 כל הכבוד! סיימת את המשחק ב-${moves} צעדים!`);
+                                    }, 500);
+                                }
+                            } else {
+                                setTimeout(() => {
+                                    flippedCards.forEach(card => {
+                                        card.classList.remove('flipped');
+                                        card.innerHTML = '?';
+                                    });
+                                    flippedCards = [];
+                                }, 1000);
+                            }
+                        }
+                    }
+                });
+
+                board.appendChild(card);
+            });
+
+            document.getElementById('pairs').textContent = '0';
+            document.getElementById('moves').textContent = '0';
+        }
+
+        function openPuzzleGame() {
+            const gameContent = document.getElementById('gameContent');
+            gameContent.innerHTML = `
+                <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">🧩 פאזל דיגיטלי</h2>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    צעדים: <span id="puzzleMoves">0</span>
+                </div>
+                <div id="puzzleBoard" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; max-width: 300px; margin: 20px auto; background: #333;"></div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="startPuzzleGame()">ערבב פאזל</button>
+                </div>
+            `;
+            startPuzzleGame();
+        }
+
+        function startPuzzleGame() {
+            let numbers = [1, 2, 3, 4, 5, 6, 7, 8, 0]; // 0 represents empty space
+            let moves = 0;
+
+            function shuffle() {
+                for (let i = 0; i < 1000; i++) {
+                    const emptyIndex = numbers.indexOf(0);
+                    const validMoves = getValidMoves(emptyIndex);
+                    const randomMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+                    [numbers[emptyIndex], numbers[randomMove]] = [numbers[randomMove], numbers[emptyIndex]];
+                }
+            }
+
+            function getValidMoves(emptyIndex) {
+                const moves = [];
+                const row = Math.floor(emptyIndex / 3);
+                const col = emptyIndex % 3;
+
+                if (row > 0) moves.push(emptyIndex - 3); // up
+                if (row < 2) moves.push(emptyIndex + 3); // down
+                if (col > 0) moves.push(emptyIndex - 1); // left
+                if (col < 2) moves.push(emptyIndex + 1); // right
+
+                return moves;
+            }
+
+            function checkWin() {
+                return numbers.slice(0, 8).every((num, index) => num === index + 1) && numbers[8] === 0;
+            }
+
+            function renderBoard() {
+                const board = document.getElementById('puzzleBoard');
+                board.innerHTML = '';
+
+                numbers.forEach((num, index) => {
+                    const cell = document.createElement('div');
+                    cell.style.cssText = `
+                        aspect-ratio: 1;
+                        background: ${num === 0 ? '#333' : 'linear-gradient(45deg, #667eea, #764ba2)'};
+                        color: white;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 2em;
+                        cursor: ${num === 0 ? 'default' : 'pointer'};
+                        border-radius: 5px;
+                        font-weight: bold;
+                    `;
+                    
+                    if (num !== 0) {
+                        cell.textContent = num;
+                        cell.addEventListener('click', () => {
+                            const emptyIndex = numbers.indexOf(0);
+                            const validMoves = getValidMoves(emptyIndex);
+                            
+                            if (validMoves.includes(index)) {
+                                [numbers[emptyIndex], numbers[index]] = [numbers[index], numbers[emptyIndex]];
+                                moves++;
+                                document.getElementById('puzzleMoves').textContent = moves;
+                                renderBoard();
+                                
+                                if (checkWin()) {
+                                    setTimeout(() => {
+                                        alert(`🎉 כל הכבוד! פתרת את הפאזל ב-${moves} צעדים!`);
+                                    }, 300);
+                                }
+                            }
+                        });
+                    }
+
+                    board.appendChild(cell);
+                });
+            }
+
+            shuffle();
+            moves = 0;
+            document.getElementById('puzzleMoves').textContent = '0';
+            renderBoard();
+        }
+
+        function openMonopolyGame() {
+            const gameContent = document.getElementById('gameContent');
+            gameContent.innerHTML = `
+                <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">🏠 מונופול דיגיטלי</h2>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    כסף: <span id="money">1500</span>₪ | נכסים: <span id="properties">0</span>
+                </div>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div id="diceResult" style="font-size: 3em; margin: 20px 0;">🎲🎲</div>
+                    <div id="currentPosition" style="font-size: 1.2em; margin: 10px 0;">עמדה נוכחית: התחלה</div>
+                </div>
+                <div style="text-align: center;">
+                    <button class="btn" onclick="rollDice()">זרוק קוביות</button>
+                    <button class="btn" onclick="resetMonopoly()">משחק חדש</button>
+                </div>
+                <div id="monopolyMessage" style="text-align: center; margin-top: 20px; padding: 10px; background: #f0f0f0; border-radius: 10px;"></div>
+            `;
+            initMonopoly();
+        }
+
+        function initMonopoly() {
+            window.monopolyGame = {
+                money: 1500,
+                properties: 0,
+                position: 0,
+                spaces: [
+                    'התחלה', 'רחוב אלנבי', 'קרן קהילה', 'רחוב בן יהודה', 'מס הכנסה',
+                    'תחנת רכבת', 'רחוב דיזנגוף', 'הזדמנות', 'רחוב רוטשילד', 'רחוב הרצל',
+                    'בית כלא', 'רחוב יפו', 'חברת חשמל', 'רחוב קינג ג׳ורג׳', 'רחוב בגדד',
+                    'תחנת רכבת', 'שדרות יהודית', 'קרן קהילה', 'שדרות בן גוריון', 'רחוב אבן גבירול'
+                ]
+            };
+            updateMonopolyDisplay();
+        }
+
+        function rollDice() {
+            const dice1 = Math.floor(Math.random() * 6) + 1;
+            const dice2 = Math.floor(Math.random() * 6) + 1;
+            const total = dice1 + dice2;
+
+            document.getElementById('diceResult').textContent = `${dice1} + ${dice2} = ${total}`;
+            
+            window.monopolyGame.position = (window.monopolyGame.position + total) % 20;
+            
+            if (window.monopolyGame.position === 0) {
+                window.monopolyGame.money += 200;
+                showMonopolyMessage('עברת דרך התחלה! קיבלת 200₪');
+            } else {
+                const spaceName = window.monopolyGame.spaces[window.monopolyGame.position];
+                handleMonopolySpace(spaceName);
+            }
+            
+            updateMonopolyDisplay();
+        }
+
+        function handleMonopolySpace(spaceName) {
+            if (spaceName.includes('רחוב') || spaceName.includes('שדרות')) {
+                const cost = Math.floor(Math.random() * 200) + 100;
+                if (window.monopolyGame.money >= cost) {
+                    const buy = confirm(`האם תרצה לקנות את ${spaceName} ב-${cost}₪?`);
+                    if (buy) {
+                        window.monopolyGame.money -= cost;
+                        window.monopolyGame.properties++;
+                        showMonopolyMessage(`קנית את ${spaceName} ב-${cost}₪`);
+                    } else {
+                        showMonopolyMessage(`לא קנית את ${spaceName}`);
+                    }
+                } else {
+                    showMonopolyMessage(`אין לך מספיק כסף לקנות את ${spaceName}`);
+                }
+            } else if (spaceName === 'מס הכנסה') {
+                const tax = 200;
+                window.monopolyGame.money -= tax;
+                showMonopolyMessage(`שילמת מס הכנסה: ${tax}₪`);
+            } else if (spaceName === 'בית כלא') {
+                showMonopolyMessage('אתה בבית הכלא - רק ביקור');
+            } else {
+                showMonopolyMessage(`הגעת ל: ${spaceName}`);
+            }
+        }
+
+        function showMonopolyMessage(message) {
+            document.getElementById('monopolyMessage').textContent = message;
+        }
+
+        function updateMonopolyDisplay() {
+            document.getElementById('money').textContent = window.monopolyGame.money;
+            document.getElementById('properties').textContent = window.monopolyGame.properties;
+            document.getElementById('currentPosition').textContent = 
+                `עמדה נוכחית: ${window.monopolyGame.spaces[window.monopolyGame.position]}`;
+        }
+
+        function resetMonopoly() {
+            initMonopoly();
+            showMonopolyMessage('התחיל משחק חדש!');
+        }
+
+        function openRummikubGame() {
+            const gameContent = document.getElementById('gameContent');
+            gameContent.innerHTML = `
+                <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">🎯 רמיקוב דיגיטלי</h2>
+                <p style="text-align: center; margin-bottom: 20px;">גרסה פשוטה של משחק הרמיקוב</p>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    ניקוד: <span id="rummikubScore">0</span>
+                </div>
+                <div id="rummikubBoard" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; max-width: 500px; margin: 20px auto;"></div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="newRummikubGame()">משחק חדש</button>
+                </div>
+            `;
+            newRummikubGame();
+        }
+
+        function newRummikubGame() {
+            const colors = ['🔴', '🔵', '🟡', '⚫'];
+            const board = document.getElementById('rummikubBoard');
+            board.innerHTML = '';
+            
+            for (let i = 0; i < 21; i++) {
+                const tile = document.createElement('div');
+                const number = (i % 7) + 1;
+                const color = colors[Math.floor(i / 7) % 4];
+                
+                tile.style.cssText = `
+                    aspect-ratio: 1;
+                    background: white;
+                    border: 2px solid #ddd;
+                    border-radius: 5px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.2em;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                `;
+                
+                tile.innerHTML = `${color}${number}`;
+                tile.addEventListener('click', () => {
+                    tile.style.background = tile.style.background === 'lightgreen' ? 'white' : 'lightgreen';
+                    updateRummikubScore();
+                });
+                
+                board.appendChild(tile);
+            }
+        }
+
+        function updateRummikubScore() {
+            const selectedTiles = document.querySelectorAll('#rummikubBoard div[style*="lightgreen"]');
+            document.getElementById('rummikubScore').textContent = selectedTiles.length * 10;
+        }
+
+        function openSolitaireGame() {
+            const gameContent = document.getElementById('gameContent');
+            gameContent.innerHTML = `
+                <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">♠️ סוליטר</h2>
+                <div style="text-align: center; margin-bottom: 20px;">
+                    צעדים: <span id="solitaireMoves">0</span>
+                </div>
+                <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin: 20px 0;">
+                    <div id="deck" style="width: 60px; height: 80px; background: #1e3a8a; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer;">חפיסה</div>
+                    <div id="waste" style="width: 60px; height: 80px; background: #f3f4f6; border: 2px dashed #d1d5db; border-radius: 8px;"></div>
+                </div>
+                <div id="foundations" style="display: flex; justify-content: center; gap: 10px; margin: 20px 0;">
+                    ${['♠️', '♥️', '♦️', '♣️'].map(suit => 
+                        `<div class="foundation" data-suit="${suit}" style="width: 60px; height: 80px; background: #f3f4f6; border: 2px dashed #d1d5db; border-radius: 8px; display: flex; align-items: center; justify-content: center;">${suit}</div>`
+                    ).join('')}
+                </div>
+                <div style="text-align: center;">
+                    <button class="btn" onclick="newSolitaireGame()">משחק חדש</button>
+                </div>
+            `;
+            newSolitaireGame();
+        }
+
+        function newSolitaireGame() {
+            const suits = ['♠️', '♥️', '♦️', '♣️'];
+            const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+            
+            let deck = [];

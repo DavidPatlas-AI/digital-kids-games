@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משחק המפלצת הפשוט</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            direction: rtl;
+        }
+
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* UI Panel */
+        .ui-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .score-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .score-number {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .game-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: all 0.3s;
+        }
+
+        .start-btn {
+            background: #28a745;
+            color: white;
+        }
+
+        .pause-btn {
+            background: #ffc107;
+            color: black;
+        }
+
+        .restart-btn {
+            background: #dc3545;
+            color: white;
+        }
+
+        .game-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .game-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Monster */
+        .monster {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #ee5a52);
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: breathe 2s infinite ease-in-out;
+        }
+
+        .monster.happy {
+            animation: bounce 0.6s ease-out;
+        }
+
+        .eyes {
+            position: relative;
+            top: 30%;
+            display: flex;
+            justify-content: space-around;
+            padding: 0 25%;
+        }
+
+        .eye {
+            width: 25px;
+            height: 25px;
+            background: white;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .eye::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #333;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .mouth {
+            position: absolute;
+            bottom: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 40px;
+            background: #333;
+            border-radius: 0 0 40px 40px;
+        }
+
+        .mouth.eating {
+            animation: eating 0.5s 3 ease-in-out;
+        }
+
+        /* Speech Bubble */
+        .speech-bubble {
+            position: absolute;
+            top: -70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px 15px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 100;
+            white-space: nowrap;
+        }
+
+        .speech-bubble.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-10px);
+        }
+
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 8px solid transparent;
+            border-top-color: white;
+        }
+
+        /* Food Items */
+        .food-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .food-item {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            pointer-events: auto;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            animation: float 3s infinite ease-in-out;
+        }
+
+        .food-item:hover {
+            transform: scale(1.1);
+        }
+
+        .food-item.eaten {
+            opacity: 0;
+            transform: scale(0);
+            pointer-events: none;
+        }
+
+        .food-item.golden {
+            border: 3px solid gold;
+            box-shadow: 0 3px 15px rgba(255,215,0,0.5);
+        }
+
+        /* Success Animation */
+        .success-screen {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,255,0,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 80px;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .success-screen.show {
+            opacity: 1;
+        }
+
+        /* Animations */
+        @keyframes breathe {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+
+        @keyframes eating {
+            0%, 100% { transform: translateX(-50%) scaleY(1); }
+            50% { transform: translateX(-50%) scaleY(0.3); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .ui-panel {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .monster {
+                width: 150px;
+                height: 150px;
+            }
+
+            .food-item {
+                width: 50px;
+                height: 50px;
+                font-size: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- UI Panel -->
+        <div class="ui-panel">
+            <div class="score-info">
+                <div class="score-item">
+                    <div class="score-label">ניקוד</div>
+                    <div class="score-number" id="score">0</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">זמן</div>
+                    <div class="score-number" id="timer">60</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">רמה</div>
+                    <div class="score-number" id="level">1</div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="game-btn start-btn" id="startBtn">התחל</button>
+                <button class="game-btn pause-btn" id="pauseBtn" disabled>עצור</button>
+                <button class="game-btn restart-btn" id="restartBtn">מחדש</button>
+            </div>
+        </div>
+
+        <!-- Monster -->
+        <div class="monster" id="monster">
+            <div class="eyes">
+                <div class="eye"></div>
+                <div class="eye"></div>
+            </div>
+            <div class="mouth" id="mouth"></div>
+            <div class="speech-bubble" id="speechBubble">
+                <span id="speechText">לחץ התחל!</span>
+            </div>
+        </div>
+
+        <!-- Food Container -->
+        <div class="food-container" id="foodContainer"></div>
+
+        <!-- Success Screen -->
+        <div class="success-screen" id="successScreen">🎉</div>
+    </div>
+
+    <script>
+        // Simple Game Controller
+        class SimpleGame {
+            constructor() {
+                this.score = 0;
+                this.level = 1;
+                this.timeLeft = 60;
+                this.isPlaying = false;
+                this.isPaused = false;
+                this.currentFood = null;
+                this.timer = null;
+                
+                this.foods = [
+                    { emoji: '🍎', name: 'תפוח', points: 10 },
+                    { emoji: '🍌', name: 'בננה', points: 15 },
+                    { emoji: '🍕', name: 'פיצה', points: 20 },
+                    { emoji: '🍔', name: 'המבורגר', points: 25 },
+                    { emoji: '🎂', name: 'עוגה', points: 30 },
+                    { emoji: '🍦', name: 'גלידה', points: 35 },
+                    { emoji: '🍩', name: 'דונאט', points: 40 },
+                    { emoji: '🍭', name: 'סוכריה', points: 50 }
+                ];
+
+                this.setupEvents();
+                this.createFoodItems();
+                this.updateUI();
+            }
+
+            setupEvents() {
+                // Using addEventListener instead of onclick for better compatibility
+                const startBtn = document.getElementById('startBtn');
+                const pauseBtn = document.getElementById('pauseBtn');
+                const restartBtn = document.getElementById('restartBtn');
+                
+                if (startBtn) {
+                    startBtn.addEventListener('click', () => {
+                        console.log('Start button clicked!');
+                        this.startGame();
+                    });
+                }
+                
+                if (pauseBtn) {
+                    pauseBtn.addEventListener('click', () => {
+                        console.log('Pause button clicked!');
+                        this.togglePause();
+                    });
+                }
+                
+                if (restartBtn) {
+                    restartBtn.addEventListener('click', () => {
+                        console.log('Restart button clicked!');
+                        this.restartGame();
+                    });
+                }
+            }
+
+            startGame() {
+                console.log('Starting game...');
+                this.isPlaying = true;
+                
+                const startBtn = document.getElementById('startBtn');
+                const pauseBtn = document.getElementById('pauseBtn');
+                
+                if (startBtn) {
+                    startBtn.disabled = true;
+                    startBtn.textContent = 'משחק...';
+                }
+                if (pauseBtn) {
+                    pauseBtn.disabled = false;
+                }
+                
+                this.startTimer();
+                this.requestFood();
+                console.log('Game started successfully!');
+            }
+
+            togglePause() {
+                if (this.isPaused) {
+                    this.isPaused = false;
+                    document.getElementById('pauseBtn').textContent = 'עצור';
+                    this.startTimer();
+                } else {
+                    this.isPaused = true;
+                    document.getElementById('pauseBtn').textContent = 'המשך';
+                    clearInterval(this.timer);
+                }
+            }
+
+            restartGame() {
+                this.score = 0;
+                this.level = 1;
+                this.timeLeft = 60;
+                this.isPlaying = false;
+                this.isPaused = false;
+                this.currentFood = null;
+                
+                clearInterval(this.timer);
+                
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+                document.getElementById('pauseBtn').textContent = 'עצור';
+                
+                this.hideSpeech();
+                this.createFoodItems();
+                this.updateUI();
+            }
+
+            startTimer() {
+                this.timer = setInterval(() => {
+                    if (this.isPaused) return;
+                    
+                    this.timeLeft--;
+                    this.updateUI();
+                    
+                    if (this.timeLeft <= 0) {
+                        this.endGame();
+                    }
+                }, 1000);
+            }
+
+            requestFood() {
+                if (!this.isPlaying || this.isPaused) return;
+                
+                this.currentFood = this.foods[Math.floor(Math.random() * this.foods.length)];
+                this.showSpeech(`אני רוצה ${this.currentFood.name}!`);
+                
+                setTimeout(() => {
+                    if (this.isPlaying && !this.isPaused) {
+                        this.requestFood();
+                    }
+                }, 5000);
+            }
+
+            showSpeech(text) {
+                const bubble = document.getElementById('speechBubble');
+                const speechText = document.getElementById('speechText');
+                
+                speechText.textContent = text;
+                bubble.classList.add('show');
+                
+                setTimeout(() => {
+                    bubble.classList.remove('show');
+                }, 4000);
+            }
+
+            hideSpeech() {
+                document.getElementById('speechBubble').classList.remove('show');
+            }
+
+            createFoodItems() {
+                const container = document.getElementById('foodContainer');
+                container.innerHTML = '';
+                
+                this.foods.forEach((food, index) => {
+                    const foodElement = document.createElement('div');
+                    foodElement.className = 'food-item';
+                    foodElement.textContent = food.emoji;
+                    foodElement.dataset.name = food.name;
+                    
+                    // Random chance for golden food
+                    if (Math.random() < 0.2) {
+                        foodElement.classList.add('golden');
+                    }
+                    
+                    // Position in circle around monster
+                    const angle = (index / this.foods.length) * 2 * Math.PI;
+                    const radius = 250;
+                    const centerX = window.innerWidth / 2;
+                    const centerY = window.innerHeight / 2;
+                    
+                    const x = centerX + radius * Math.cos(angle) - 30;
+                    const y = centerY + radius * Math.sin(angle) - 30;
+                    
+                    foodElement.style.left = x + 'px';
+                    foodElement.style.top = y + 'px';
+                    foodElement.style.animationDelay = (index * 0.1) + 's';
+                    
+                    // Click event
+                    foodElement.onclick = () => this.feedMonster(food, foodElement);
+                    
+                    container.appendChild(foodElement);
+                });
+            }
+
+            feedMonster(food, element) {
+                if (!this.isPlaying || this.isPaused || !this.currentFood) return;
+                
+                const monster = document.getElementById('monster');
+                const mouth = document.getElementById('mouth');
+                
+                if (food.name === this.currentFood.name) {
+                    // Correct food!
+                    const isGolden = element.classList.contains('golden');
+                    const points = food.points * (isGolden ? 2 : 1);
+                    
+                    this.score += points;
+                    
+                    // Visual feedback
+                    element.classList.add('eaten');
+                    monster.classList.add('happy');
+                    mouth.classList.add('eating');
+                    
+                    setTimeout(() => {
+                        monster.classList.remove('happy');
+                        mouth.classList.remove('eating');
+                    }, 1000);
+                    
+                    this.showSuccess();
+                    this.showSpeech(isGolden ? '⭐ טעים מאוד!' : '😋 יממי!');
+                    
+                    // Level up check
+                    if (this.score >= this.level * 100) {
+                        this.levelUp();
+                    }
+                    
+                    setTimeout(() => {
+                        this.requestFood();
+                    }, 2000);
+                } else {
+                    // Wrong food!
+                    this.showSpeech('😤 לא! זה לא מה שרציתי!');
+                    setTimeout(() => {
+                        this.requestFood();
+                    }, 1500);
+                }
+                
+                this.updateUI();
+            }
+
+            showSuccess() {
+                const successScreen = document.getElementById('successScreen');
+                successScreen.classList.add('show');
+                
+                setTimeout(() => {
+                    successScreen.classList.remove('show');
+                }, 600);
+            }
+
+            levelUp() {
+                this.level++;
+                this.timeLeft += 30; // Bonus time
+                this.showSpeech(`🎉 רמה ${this.level}! זמן בונוס!`);
+            }
+
+            endGame() {
+                this.isPlaying = false;
+                clearInterval(this.timer);
+                
+                alert(`🎮 המשחק נגמר!\n\nניקוד: ${this.score}\nרמה: ${this.level}\n\nכל הכבוד! 🎉`);
+                this.restartGame();
+            }
+
+            updateUI() {
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('timer').textContent = this.timeLeft;
+                document.getElementById('level').textContent = this.level;
+            }
+        }
+
+        // Start the game when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, starting game...');
+            const game = new SimpleGame();
+            console.log('🎮 המשחק נטען בהצלחה!');
+            
+            // Add extra safety check for buttons
+            setTimeout(() => {
+                const startBtn = document.getElementById('startBtn');
+                const pauseBtn = document.getElementById('pauseBtn');
+                const restartBtn = document.getElementById('restartBtn');
+                
+                console.log('Buttons found:', {
+                    start: !!startBtn,
+                    pause: !!pauseBtn,
+                    restart: !!restartBtn
+                });
+                
+                if (startBtn && !startBtn.onclick && !startBtn.hasAttribute('data-listener')) {
+                    startBtn.setAttribute('data-listener', 'true');
+                    startBtn.addEventListener('click', function() {
+                        console.log('Backup start button clicked!');
+                        game.startGame();
+                    });
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משחק המפלצות המשופר</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            min-height: 100vh;
+            direction: rtl;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            overflow: hidden;
+        }
+
+        /* Game UI */
+        .game-ui {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .score-section {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+
+        .score-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .level-indicator {
+            background: linear-gradient(45deg, #ff6b6b, #ffa500);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .control-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .start-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+        }
+
+        .pause-btn {
+            background: linear-gradient(45deg, #ffc107, #fd7e14);
+        }
+
+        .restart-btn {
+            background: linear-gradient(45deg, #dc3545, #e83e8c);
+        }
+
+        .control-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Monster */
+        .monster {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #ee5a52);
+            border-radius: 50%;
+            animation: breathe 2s infinite ease-in-out;
+            cursor: pointer;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+
+        .monster.active {
+            animation: breathe 1.5s infinite ease-in-out, glow 2s infinite ease-in-out;
+        }
+
+        .eyes {
+            position: relative;
+            top: 25%;
+            display: flex;
+            justify-content: space-around;
+            padding: 0 20%;
+        }
+
+        .eye {
+            width: 35px;
+            height: 35px;
+            background: white;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .eye::after {
+            content: '';
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            background: #333;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: lookAround 4s infinite ease-in-out;
+        }
+
+        .mouth {
+            position: absolute;
+            bottom: 25%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 60px;
+            background: #333;
+            border-radius: 0 0 60px 60px;
+            animation: talk 1.5s infinite ease-in-out;
+        }
+
+        .mouth.eating {
+            animation: eating 0.6s 4 ease-in-out;
+        }
+
+        /* Speech Bubble */
+        .speech-bubble {
+            position: absolute;
+            top: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 15px 20px;
+            border-radius: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateX(-50%) scale(0);
+            transition: all 0.3s ease;
+            z-index: 100;
+            max-width: 200px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .speech-bubble.show {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 10px solid transparent;
+            border-top-color: white;
+        }
+
+        .speech-text {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            margin: 0;
+        }
+
+        /* Food Items */
+        .food-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .food-item {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            background: white;
+            border-radius: 15px;
+            padding: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            cursor: grab;
+            transition: all 0.3s ease;
+            animation: float 3s infinite ease-in-out;
+            pointer-events: auto;
+            border: 3px solid transparent;
+            user-select: none;
+        }
+
+        .food-item:hover {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .food-item:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+
+        .food-item.eaten {
+            opacity: 0;
+            transform: scale(0);
+            pointer-events: none;
+        }
+
+        .food-item.golden {
+            border-color: #ffd700;
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.5);
+            animation: float 3s infinite ease-in-out, sparkle 2s infinite ease-in-out;
+        }
+
+        .food-item svg {
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        /* Success Animation */
+        .success-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 255, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 100px;
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .success-overlay.show {
+            opacity: 1;
+        }
+
+        /* Level Complete */
+        .level-complete {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .level-complete.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .level-complete-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+
+        .level-complete.show .level-complete-content {
+            transform: scale(1);
+        }
+
+        /* Particle Effects */
+        .particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #ffd700;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particle-burst 1s ease-out forwards;
+        }
+
+        .heart-particle {
+            position: absolute;
+            font-size: 20px;
+            color: #ff6b6b;
+            pointer-events: none;
+            animation: heart-float 1.5s ease-out forwards;
+        }
+
+        /* Animations */
+        @keyframes breathe {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3); }
+            50% { box-shadow: 0 20px 40px rgba(255, 107, 107, 0.6); }
+        }
+
+        @keyframes talk {
+            0%, 100% { transform: translateX(-50%) scaleY(1); }
+            50% { transform: translateX(-50%) scaleY(0.7); }
+        }
+
+        @keyframes eating {
+            0%, 100% { transform: translateX(-50%) scaleY(1); }
+            50% { transform: translateX(-50%) scaleY(0.2); }
+        }
+
+        @keyframes lookAround {
+            0%, 100% { transform: translate(-50%, -50%); }
+            25% { transform: translate(-70%, -50%); }
+            75% { transform: translate(-30%, -50%); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+        }
+
+        @keyframes sparkle {
+            0%, 100% { box-shadow: 0 5px 15px rgba(255, 215, 0, 0.5); }
+            50% { box-shadow: 0 8px 25px rgba(255, 215, 0, 0.8), 0 0 20px rgba(255, 215, 0, 0.6); }
+        }
+
+        @keyframes particle-burst {
+            0% {
+                transform: scale(1) translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0) translateY(-50px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes heart-float {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .game-ui {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+
+            .score-section {
+                gap: 15px;
+            }
+
+            .monster {
+                width: 200px;
+                height: 200px;
+            }
+
+            .food-item {
+                width: 60px;
+                height: 60px;
+            }
+
+            .eye {
+                width: 28px;
+                height: 28px;
+            }
+
+            .mouth {
+                width: 90px;
+                height: 45px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Game UI -->
+        <div class="game-ui">
+            <div class="score-section">
+                <div class="score-item">
+                    <div class="score-label">ניקוד</div>
+                    <div class="score-value" id="score">0</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">זמן</div>
+                    <div class="score-value" id="timer">60</div>
+                </div>
+                <div class="score-item">
+                    <div class="score-label">חיים</div>
+                    <div class="score-value" id="lives">❤️❤️❤️</div>
+                </div>
+            </div>
+            
+            <div class="level-indicator" id="levelIndicator">
+                רמה 1
+            </div>
+            
+            <div class="controls">
+                <button class="control-btn start-btn" id="startBtn">התחל משחק</button>
+                <button class="control-btn pause-btn" id="pauseBtn" disabled>השהה</button>
+                <button class="control-btn restart-btn" id="restartBtn">התחל מחדש</button>
+            </div>
+        </div>
+
+        <!-- Monster -->
+        <div class="monster" id="monster">
+            <div class="eyes">
+                <div class="eye"></div>
+                <div class="eye"></div>
+            </div>
+            <div class="mouth" id="mouth"></div>
+            <div class="speech-bubble" id="speechBubble">
+                <p class="speech-text" id="speechText">Feed me!</p>
+            </div>
+        </div>
+
+        <!-- Food Container -->
+        <div class="food-container" id="foodContainer"></div>
+
+        <!-- Success Animation -->
+        <div class="success-overlay" id="successOverlay">
+            <span>🎉</span>
+        </div>
+
+        <!-- Level Complete -->
+        <div class="level-complete" id="levelComplete">
+            <div class="level-complete-content">
+                <h2>🎉 כל הכבוד! 🎉</h2>
+                <p id="levelCompleteText">עברת לרמה הבאה!</p>
+                <button class="control-btn start-btn" id="nextLevelBtn">רמה הבאה</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SVG Food Icons -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <symbol id="apple" viewBox="0 0 100 100">
+            <circle cx="50" cy="55" r="30" fill="#FF0000"/>
+            <path d="M50 25 C40 35, 60 35, 50 25" fill="#228B22"/>
+        </symbol>
+        
+        <symbol id="banana" viewBox="0 0 100 100">
+            <path d="M20 50 Q50 20 80 60" fill="#FFD700" stroke="#FFA500" stroke-width="2"/>
+        </symbol>
+        
+        <symbol id="pizza" viewBox="0 0 100 100">
+            <path d="M20 70 L50 20 L80 70 Z" fill="#FFE4B5"/>
+            <circle cx="50" cy="45" r="6" fill="#FF0000"/>
+            <circle cx="40" cy="55" r="4" fill="#8B4513"/>
+            <circle cx="60" cy="55" r="4" fill="#228B22"/>
+        </symbol>
+        
+        <symbol id="burger" viewBox="0 0 100 100">
+            <ellipse cx="50" cy="35" rx="30" ry="8" fill="#DEB887"/>
+            <rect x="25" y="40" width="50" height="6" fill="#228B22"/>
+            <rect x="25" y="50" width="50" height="8" fill="#8B4513"/>
+            <rect x="25" y="60" width="50" height="6" fill="#FF0000"/>
+            <ellipse cx="50" cy="70" rx="30" ry="8" fill="#DEB887"/>
+        </symbol>
+        
+        <symbol id="cake" viewBox="0 0 100 100">
+            <rect x="25" y="40" width="50" height="40" fill="#FFB6C1"/>
+            <rect x="25" y="50" width="50" height="3" fill="#FF69B4"/>
+            <rect x="25" y="65" width="50" height="3" fill="#FF69B4"/>
+            <rect x="47" y="25" width="6" height="15" fill="#FFD700"/>
+            <ellipse cx="50" cy="25" rx="3" ry="8" fill="#FF4500"/>
+        </symbol>
+        
+        <symbol id="ice-cream" viewBox="0 0 100 100">
+            <path d="M40 70 L50 30 L60 70 Z" fill="#DEB887"/>
+            <circle cx="50" cy="35" r="15" fill="#FFB6C1"/>
+            <circle cx="50" cy="25" r="12" fill="#87CEEB"/>
+        </symbol>
+        
+        <symbol id="donut" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="25" fill="#DEB887"/>
+            <circle cx="50" cy="50" r="10" fill="none"/>
+            <rect x="45" y="35" width="3" height="8" fill="#FF69B4"/>
+            <rect x="52" y="40" width="3" height="6" fill="#00FF00"/>
+            <rect x="40" y="45" width="3" height="5" fill="#FFD700"/>
+        </symbol>
+        
+        <symbol id="candy" viewBox="0 0 100 100">
+            <rect x="30" y="40" width="40" height="20" rx="10" fill="#FF69B4"/>
+            <path d="M25 50 L15 50 M75 50 L85 50" stroke="#FF69B4" stroke-width="4"/>
+            <circle cx="50" cy="50" r="3" fill="#FFF"/>
+        </symbol>
+    </svg>
+
+    <script>
+        // Game Configuration
+        const FOODS = [
+            { id: 'apple', name: 'apple', hebrew: 'תפוח', points: 10 },
+            { id: 'banana', name: 'banana', hebrew: 'בננה', points: 15 },
+            { id: 'pizza', name: 'pizza', hebrew: 'פיצה', points: 20 },
+            { id: 'burger', name: 'burger', hebrew: 'המבורגר', points: 25 },
+            { id: 'cake', name: 'cake', hebrew: 'עוגה', points: 30 },
+            { id: 'ice-cream', name: 'ice cream', hebrew: 'גלידה', points: 35 },
+            { id: 'donut', name: 'donut', hebrew: 'דונאט', points: 40 },
+            { id: 'candy', name: 'candy', hebrew: 'סוכריה', points: 50 }
+        ];
+
+        // Game State
+        class GameController {
+            constructor() {
+                this.score = 0;
+                this.level = 1;
+                this.lives = 3;
+                this.timeLeft = 60;
+                this.isPlaying = false;
+                this.isPaused = false;
+                this.currentFood = null;
+                this.eatenFoods = new Set();
+                this.timer = null;
+                
+                this.setupEventListeners();
+                this.createFood();
+                this.updateUI();
+            }
+
+            setupEventListeners() {
+                document.getElementById('startBtn').addEventListener('click', () => this.startGame());
+                document.getElementById('pauseBtn').addEventListener('click', () => this.togglePause());
+                document.getElementById('restartBtn').addEventListener('click', () => this.restartGame());
+                document.getElementById('nextLevelBtn').addEventListener('click', () => this.nextLevel());
+                
+                // Monster drop zone
+                const monster = document.getElementById('monster');
+                monster.addEventListener('dragover', (e) => e.preventDefault());
+                monster.addEventListener('drop', (e) => this.handleDrop(e));
+            }
+
+            startGame() {
+                this.isPlaying = true;
+                this.timeLeft = 60;
+                
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('pauseBtn').disabled = false;
+                document.getElementById('monster').classList.add('active');
+                
+                this.startTimer();
+                this.requestFood();
+                this.updateUI();
+            }
+
+            togglePause() {
+                const pauseBtn = document.getElementById('pauseBtn');
+                
+                if (!this.isPaused) {
+                    this.isPaused = true;
+                    pauseBtn.textContent = 'המשך';
+                    clearInterval(this.timer);
+                } else {
+                    this.isPaused = false;
+                    pauseBtn.textContent = 'השהה';
+                    this.startTimer();
+                }
+            }
+
+            restartGame() {
+                this.score = 0;
+                this.level = 1;
+                this.lives = 3;
+                this.timeLeft = 60;
+                this.isPlaying = false;
+                this.isPaused = false;
+                this.currentFood = null;
+                this.eatenFoods.clear();
+                
+                clearInterval(this.timer);
+                
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('pauseBtn').disabled = true;
+                document.getElementById('pauseBtn').textContent = 'השהה';
+                document.getElementById('monster').classList.remove('active');
+                document.getElementById('levelComplete').classList.remove('show');
+                document.getElementById('speechBubble').classList.remove('show');
+                
+                this.createFood();
+                this.updateUI();
+            }
+
+            nextLevel() {
+                this.level++;
+                this.timeLeft = Math.max(30, 60 - (this.level - 1) * 10);
+                this.lives = Math.min(3, this.lives + 1); // Bonus life
+                
+                document.getElementById('levelComplete').classList.remove('show');
+                this.createFood();
+                this.startGame();
+            }
+
+            startTimer() {
+                this.timer = setInterval(() => {
+                    if (this.isPaused) return;
+                    
+                    this.timeLeft--;
+                    this.updateUI();
+                    
+                    if (this.timeLeft <= 0) {
+                        this.endGame();
+                    }
+                }, 1000);
+            }
+
+            requestFood() {
+                if (!this.isPlaying || this.isPaused) return;
+                
+                const availableFoods = FOODS.filter(food => !this.eatenFoods.has(food.id));
+                
+                if (availableFoods.length === 0) {
+                    this.completeLevel();
+                    return;
+                }
+                
+                this.currentFood = availableFoods[Math.floor(Math.random() * availableFoods.length)];
+                this.showSpeechBubble(`I want ${this.currentFood.name}!`);
+                
+                // Request again after 5 seconds
+                setTimeout(() => this.requestFood(), 5000);
+            }
+
+            showSpeechBubble(text) {
+                const bubble = document.getElementById('speechBubble');
+                const speechText = document.getElementById('speechText');
+                
+                speechText.textContent = text;
+                bubble.classList.add('show');
+                
+                setTimeout(() => {
+                    bubble.classList.remove('show');
+                }, 4000);
+            }
+
+            createFood() {
+                const container = document.getElementById('foodContainer');
+                container.innerHTML = '';
+                this.eatenFoods.clear();
+                
+                const foodCount = Math.min(8 + this.level, FOODS.length);
+                
+                for (let i = 0; i < foodCount; i++) {
+                    const food = FOODS[i % FOODS.length];
+                    this.createFoodItem(food, i, foodCount);
+                }
+            }
+
+            createFoodItem(food, index, total) {
+                const container = document.getElementById('foodContainer');
+                const foodElement = document.createElement('div');
+                
+                foodElement.className = 'food-item';
+                foodElement.draggable = true;
+                foodElement.dataset.id = food.id;
+                
+                // Golden food chance
+                if (Math.random() < 0.15) {
+                    foodElement.classList.add('golden');
+                }
+                
+                // Position in circle
+                const angle = (index / total) * 2 * Math.PI;
+                const radius = Math.min(window.innerWidth, window.innerHeight) * 0.35;
+                const centerX = window.innerWidth / 2;
+                const centerY = window.innerHeight / 2;
+                
+                const x = centerX + radius * Math.cos(angle) - 35;
+                const y = centerY + radius * Math.sin(angle) - 35;
+                
+                foodElement.style.left = x + 'px';
+                foodElement.style.top = y + 'px';
+                foodElement.style.animationDelay = (index * 0.1) + 's';
+                
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.innerHTML = `<use href="#${food.id}" />`;
+                
+                foodElement.appendChild(svg);
+                container.appendChild(foodElement);
+                
+                this.setupFoodEvents(foodElement);
+            }
+
+            setupFoodEvents(foodElement) {
+                // Drag events
+                foodElement.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', e.target.dataset.id);
+                    e.target.style.opacity = '0.5';
+                });
+                
+                foodElement.addEventListener('dragend', (e) => {
+                    e.target.style.opacity = '1';
+                });
+
+                // Touch events for mobile
+                let startPos = { x: 0, y: 0 };
+                let currentPos = { x: 0, y: 0 };
+                let isDragging = false;
+                
+                foodElement.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    startPos = { x: touch.clientX, y: touch.clientY };
+                    currentPos = { x: parseInt(foodElement.style.left) || 0, y: parseInt(foodElement.style.top) || 0 };
+                    isDragging = true;
+                    foodElement.style.zIndex = '1000';
+                    foodElement.style.transform = 'scale(1.1)';
+                });
+                
+                foodElement.addEventListener('touchmove', (e) => {
+                    if (!isDragging) return;
+                    e.preventDefault();
+                    
+                    const touch = e.touches[0];
+                    const deltaX = touch.clientX - startPos.x;
+                    const deltaY = touch.clientY - startPos.y;
+                    
+                    foodElement.style.left = (currentPos.x + deltaX) + 'px';
+                    foodElement.style.top = (currentPos.y + deltaY) + 'px';
+                });
+                
+                foodElement.addEventListener('touchend', (e) => {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    foodElement.style.zIndex = '';
+                    foodElement.style.transform = '';
+                    
+                    const touch = e.changedTouches[0];
+                    const elementAtPoint = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const monster = elementAtPoint?.closest('#monster');
+                    
+                    if (monster && monster.classList.contains('active')) {
+                        this.handleFoodDrop(foodElement.dataset.id);
+                    } else {
+                        // Reset position
+                        foodElement.style.left = currentPos.x + 'px';
+                        foodElement.style.top = currentPos.y + 'px';
+                    }
+                });
+            }
+
+            handleDrop(e) {
+                e.preventDefault();
+                const foodId = e.dataTransfer.getData('text/plain');
+                this.handleFoodDrop(foodId);
+            }
+
+            handleFoodDrop(foodId) {
+                if (!this.currentFood) return;
+                
+                const foodElement = document.querySelector(`[data-id="${foodId}"]`);
+                const monster = document.getElementById('monster');
+                const mouth = document.getElementById('mouth');
+                
+                if (this.currentFood.id === foodId) {
+                    // Correct food!
+                    const isGolden = foodElement.classList.contains('golden');
+                    const points = this.currentFood.points * (isGolden ? 2 : 1);
+                    
+                    this.score += points;
+                    this.eatenFoods.add(foodId);
+                    
+                    // Visual effects
+                    foodElement.classList.add('eaten');
+                    mouth.classList.add('eating');
+                    
+                    setTimeout(() => mouth.classList.remove('eating'), 2400);
+                    
+                    this.createParticles(monster);
+                    this.showSuccess(isGolden ? '⭐' : '🎉');
+                    this.showSpeechBubble(isGolden ? 'Golden! Delicious!' : 'Yummy! Thank
