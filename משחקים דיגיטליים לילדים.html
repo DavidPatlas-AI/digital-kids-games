@@ -1,0 +1,1207 @@
+
+<!-- saved from url=(0060)file:///C:/Users/User/Downloads/hebrew_games_site%20(1).html -->
+<html lang="he" dir="rtl"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body>document.getElementById('moves').textContent = '0';
+        }
+
+        // פאזל
+        function initPuzzle() {
+            window.puzzleNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 0];
+            window.puzzleMoves = 0;
+            shufflePuzzle();
+        }
+
+        function shufflePuzzle() {
+            for (let i = 0; i &lt; 100; i++) {
+                const emptyIndex = window.puzzleNumbers.indexOf(0);
+                const neighbors = [];
+                
+                if (emptyIndex &gt; 2) neighbors.push(emptyIndex - 3);
+                if (emptyIndex &lt; 6) neighbors.push(emptyIndex + 3);
+                if (emptyIndex % 3 &gt; 0) neighbors.push(emptyIndex - 1);
+                if (emptyIndex % 3 &lt; 2) neighbors.push(emptyIndex + 1);
+                
+                if (neighbors.length &gt; 0) {
+                    const randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    [window.puzzleNumbers[emptyIndex], window.puzzleNumbers[randomNeighbor]] = 
+                    [window.puzzleNumbers[randomNeighbor], window.puzzleNumbers[emptyIndex]];
+                }
+            }
+            
+            window.puzzleMoves = 0;
+            document.getElementById('puzzleMoves').textContent = '0';
+            renderPuzzle();
+        }
+
+        function renderPuzzle() {
+            const board = document.getElementById('puzzleBoard');
+            board.innerHTML = '';
+
+            window.puzzleNumbers.forEach((num, index) =&gt; {
+                const cell = document.createElement('div');
+                cell.style.cssText = `
+                    aspect-ratio: 1;
+                    background: ${num === 0 ? '#333' : 'linear-gradient(45deg, #667eea, #764ba2)'};
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 2em;
+                    cursor: ${num === 0 ? 'default' : 'pointer'};
+                    border-radius: 5px;
+                    font-weight: bold;
+                `;
+                
+                if (num !== 0) {
+                    cell.textContent = num;
+                    cell.addEventListener('click', () =&gt; movePiece(index));
+                }
+
+                board.appendChild(cell);
+            });
+        }
+
+        function movePiece(clickedIndex) {
+            const emptyIndex = window.puzzleNumbers.indexOf(0);
+            const isNeighbor = 
+                (Math.abs(clickedIndex - emptyIndex) === 1 &amp;&amp; Math.floor(clickedIndex / 3) === Math.floor(emptyIndex / 3)) ||
+                Math.abs(clickedIndex - emptyIndex) === 3;
+
+            if (isNeighbor) {
+                [window.puzzleNumbers[emptyIndex], window.puzzleNumbers[clickedIndex]] = 
+                [window.puzzleNumbers[clickedIndex], window.puzzleNumbers[emptyIndex]];
+                
+                window.puzzleMoves++;
+                document.getElementById('puzzleMoves').textContent = window.puzzleMoves;
+                renderPuzzle();
+                
+                const isSolved = window.puzzleNumbers.slice(0, 8).every((num, index) =&gt; num === index + 1);
+                if (isSolved) {
+                    setTimeout(() =&gt; {
+                        alert(`🎉 כל הכבוד! פתרת את הפאזל ב-${window.puzzleMoves} צעדים!`);
+                    }, 300);
+                }
+            }
+        }
+
+        // מונופול
+        function newMonopoly() {
+            window.monopolyData = {
+                money: 1500,
+                properties: 0,
+                position: 0,
+                spaces: ['התחלה', 'רחוב אלנבי', 'קרן קהילה', 'רחוב בן יהודה', 'מס הכנסה',
+                        'תחנת רכבת', 'רחוב דיזנגוף', 'הזדמנות', 'רחוב רוטשילד', 'רחוב הרצל',
+                        'בית כלא', 'רחוב יפו', 'חברת חשמל', 'רחוב קינג ג׳ורג׳', 'רחוב בגדד',
+                        'תחנת רכבת', 'שדרות יהודית', 'קרן קהילה', 'שדרות בן גוריון', 'רחוב אבן גבירול']
+            };
+            updateMonopoly();
+        }
+
+        function rollDice() {
+            const dice1 = Math.floor(Math.random() * 6) + 1;
+            const dice2 = Math.floor(Math.random() * 6) + 1;
+            const total = dice1 + dice2;
+
+            document.getElementById('diceResult').textContent = `${dice1} + ${dice2} = ${total}`;
+            
+            window.monopolyData.position = (window.monopolyData.position + total) % 20;
+            
+            if (window.monopolyData.position === 0) {
+                window.monopolyData.money += 200;
+                showMonopolyMsg('עברת דרך התחלה! קיבלת 200₪');
+            } else {
+                const spaceName = window.monopolyData.spaces[window.monopolyData.position];
+                handleSpace(spaceName);
+            }
+            
+            updateMonopoly();
+        }
+
+        function handleSpace(spaceName) {
+            if (spaceName.includes('רחוב') || spaceName.includes('שדרות')) {
+                const cost = Math.floor(Math.random() * 200) + 100;
+                if (window.monopolyData.money &gt;= cost) {
+                    const buy = confirm(`האם תרצה לקנות את ${spaceName} ב-${cost}₪?`);
+                    if (buy) {
+                        window.monopolyData.money -= cost;
+                        window.monopolyData.properties++;
+                        showMonopolyMsg(`קנית את ${spaceName} ב-${cost}₪`);
+                    }
+                } else {
+                    showMonopolyMsg(`אין לך מספיק כסף לקנות את ${spaceName}`);
+                }
+            } else if (spaceName === 'מס הכנסה') {
+                window.monopolyData.money -= 200;
+                showMonopolyMsg('שילמת מס הכנסה: 200₪');
+            } else {
+                showMonopolyMsg(`הגעת ל: ${spaceName}`);
+            }
+        }
+
+        function showMonopolyMsg(message) {
+            document.getElementById('monopolyMessage').textContent = message;
+        }
+
+        function updateMonopoly() {
+            document.getElementById('money').textContent = window.monopolyData.money;
+            document.getElementById('properties').textContent = window.monopolyData.properties;
+            document.getElementById('currentPosition').textContent = 
+                `עמדה נוכחית: ${window.monopolyData.spaces[window.monopolyData.position]}`;
+        }
+
+        // רמיקוב
+        function newRummikub() {
+            const colors = ['🔴', '🔵', '🟡', '🟢'];
+            const board = document.getElementById('rummikubBoard');
+            board.innerHTML = '';
+            
+            for (let i = 0; i &lt; 28; i++) {
+                const tile = document.createElement('div');
+                const number = (i % 7) + 1;
+                const color = colors[Math.floor(i / 7) % 4];
+                
+                tile.style.cssText = `
+                    aspect-ratio: 1;
+                    background: white;
+                    border: 2px solid #ddd;
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1.2em;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    font-weight: bold;
+                `;
+                
+                tile.innerHTML = `${color}${number}`;
+                tile.addEventListener('click', () =&gt; toggleTile(tile));
+                
+                board.appendChild(tile);
+            }
+            
+            updateRummikubScore();
+        }
+
+        function toggleTile(tile) {
+            if (tile.style.background === 'lightgreen') {
+                tile.style.background = 'white';
+                tile.style.boxShadow = 'none';
+            } else {
+                tile.style.background = 'lightgreen';
+                tile.style.boxShadow = '0 0 10px rgba(72, 187, 120, 0.8)';
+            }
+            updateRummikubScore();
+        }
+
+        function updateRummikubScore() {
+            const selectedTiles = document.querySelectorAll('#rummikubBoard div[style*="lightgreen"]');
+            const count = selectedTiles.length;
+            document.getElementById('selectedTiles').textContent = count;
+            document.getElementById('rummikubScore').textContent = count * 15;
+        }
+
+        function clearSelection() {
+            const tiles = document.querySelectorAll('#rummikubBoard div');
+            tiles.forEach(tile =&gt; {
+                tile.style.background = 'white';
+                tile.style.boxShadow = 'none';
+            });
+            updateRummikubScore();
+        }
+
+        // סוליטר
+        function newSolitaire() {
+            window.solitaireCards = 52;
+            document.getElementById('cardsLeft').textContent = '52';
+            document.getElementById('solitaireMessage').textContent = '';
+            document.getElementById('currentCard').innerHTML = 'לחץ לחלוק קלף';
+            document.getElementById('currentCard').style.background = '#1e3a8a';
+            document.getElementById('currentCard').style.color = 'white';
+        }
+
+        function drawCard() {
+            if (window.solitaireCards &gt; 0) {
+                const suits = ['♠️', '♥️', '♦️', '♣️'];
+                const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+                
+                const suit = suits[Math.floor(Math.random() * suits.length)];
+                const value = values[Math.floor(Math.random() * values.length)];
+                
+                document.getElementById('currentCard').innerHTML = `${suit}<br><span style="font-size: 1.5em;">${value}</span>`;
+                document.getElementById('currentCard').style.background = 'white';
+                document.getElementById('currentCard').style.color = suit === '♥️' || suit === '♦️' ? 'red' : 'black';
+                
+                window.solitaireCards--;
+                document.getElementById('cardsLeft').textContent = window.solitaireCards;
+                
+                if (window.solitaireCards === 0) {
+                    document.getElementById('solitaireMessage').textContent = '🎉 כל הקלפים נגמרו!';
+                }
+            }
+        }
+
+        // קלפים
+        function newCardGame() {
+            const suits = ['♠️', '♥️', '♦️', '♣️'];
+            const values = ['A', 'K', 'Q', 'J'];
+            const cards = [];
+            
+            suits.forEach(suit =&gt; {
+                values.forEach(value =&gt; {
+                    cards.push({suit, value, id: `${suit}${value}`});
+                });
+            });
+            
+            const gameCards = [...cards, ...cards];
+            gameCards.sort(() =&gt; Math.random() - 0.5);
+            
+            const board = document.getElementById('cardGame');
+            board.innerHTML = '';
+            
+            let flippedCards = [];
+            let matchedPairs = 0;
+            let score = 0;
+            let startTime = Date.now();
+            
+            const timer = setInterval(() =&gt; {
+                if (matchedPairs === 8) {
+                    clearInterval(timer);
+                    return;
+                }
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                document.getElementById('cardTime').textContent = elapsed;
+            }, 1000);
+            
+            gameCards.forEach(card =&gt; {
+                const cardElement = document.createElement('div');
+                cardElement.style.cssText = `
+                    aspect-ratio: 0.7;
+                    background: #1e3a8a;
+                    color: white;
+                    border-radius: 8px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    font-size: 1.1em;
+                    transition: all 0.3s ease;
+                    border: 2px solid #333;
+                `;
+                
+                cardElement.innerHTML = '🂠';
+                cardElement.dataset.cardId = card.id;
+                
+                cardElement.addEventListener('click', () =&gt; {
+                    if (flippedCards.length &lt; 2 &amp;&amp; !cardElement.classList.contains('flipped')) {
+                        cardElement.classList.add('flipped');
+                        cardElement.innerHTML = `${card.suit}<br>${card.value}`;
+                        cardElement.style.background = 'white';
+                        cardElement.style.color = card.suit === '♥️' || card.suit === '♦️' ? 'red' : 'black';
+                        flippedCards.push(cardElement);
+                        
+                        if (flippedCards.length === 2) {
+                            if (flippedCards[0].dataset.cardId === flippedCards[1].dataset.cardId) {
+                                flippedCards.forEach(c =&gt; {
+                                    c.style.border = '3px solid #48bb78';
+                                    c.style.boxShadow = '0 0 15px rgba(72, 187, 120, 0.6)';
+                                });
+                                matchedPairs++;
+                                score += 10;
+                                document.getElementById('cardScore').textContent = score;
+                                flippedCards = [];
+                                
+                                if (matchedPairs === 8) {
+                                    clearInterval(timer);
+                                    const finalTime = Math.floor((Date.now() - startTime) / 1000);
+                                    setTimeout(() =&gt; {
+                                        alert(`🎉 מצוין! זכית ב-${finalTime} שניות עם ${score} נקודות!`);
+                                    }, 500);
+                                }
+                            } else {
+                                setTimeout(() =&gt; {
+                                    flippedCards.forEach(c =&gt; {
+                                        c.classList.remove('flipped');
+                                        c.innerHTML = '🂠';
+                                        c.style.background = '#1e3a8a';
+                                        c.style.color = 'white';
+                                    });
+                                    flippedCards = [];
+                                }, 1000);
+                            }
+                        }
+                    }
+                });
+                
+                board.appendChild(cardElement);
+            });
+            
+            document.getElementById('cardScore').textContent = '0';
+            document.getElementById('cardTime').textContent = '0';
+        }
+
+        // פוקר
+        function newPoker() {
+            window.pokerData = {
+                money: 100,
+                playerHand: [],
+                computerHand: []
+            };
+            document.getElementById('pokerMoney').textContent = '100';
+        }
+
+        function dealCards() {
+            const suits = ['♠️', '♥️', '♦️', '♣️'];
+            const values = [
+                {name: 'A', value: 1}, {name: '2', value: 2}, {name: '3', value: 3},
+                {name: '4', value: 4}, {name: '5', value: 5}, {name: '6', value: 6},
+                {name: '7', value: 7}, {name: '8', value: 8}, {name: '9', value: 9},
+                {name: '10', value: 10}, {name: 'J', value: 11}, {name: 'Q', value: 12}, {name: 'K', value: 13}
+            ];
+            
+            const deck = [];
+            suits.forEach(suit =&gt; {
+                values.forEach(value =&gt; {
+                    deck.push({suit, ...value});
+                });
+            });
+            
+            for (let i = deck.length - 1; i &gt; 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+            
+            window.pokerData.playerHand = deck.slice(0, 3);
+            window.pokerData.computerHand = deck.slice(3, 6);
+            
+            displayHand('playerHand', window.pokerData.playerHand, false);
+            displayHand('computerHand', window.pokerData.computerHand, true);
+            
+            const playerSum = window.pokerData.playerHand.reduce((sum, card) =&gt; sum + card.value, 0);
+            document.getElementById('playerSum').textContent = `סכום: ${playerSum}`;
+            document.getElementById('computerSum').textContent = 'סכום: ?';
+            
+            document.getElementById('playPokerBtn').style.display = 'inline-block';
+            document.getElementById('pokerResult').textContent = '';
+        }
+
+        function displayHand(containerId, hand, hidden) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            hand.forEach(card =&gt; {
+                const cardElement = document.createElement('div');
+                cardElement.style.cssText = `
+                    width: 50px;
+                    height: 70px;
+                    background: ${hidden ? '#1e3a8a' : 'white'};
+                    color: ${hidden ? 'white' : (card.suit === '♥️' || card.suit === '♦️' ? 'red' : 'black')};
+                    border: 2px solid #333;
+                    border-radius: 6px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 0.8em;
+                    font-weight: bold;
+                `;
+                
+                cardElement.innerHTML = hidden ? '🂠' : `${card.suit}<br>${card.name}`;
+                container.appendChild(cardElement);
+            });
+        }
+
+        function playPoker() {
+            displayHand('computerHand', window.pokerData.computerHand, false);
+            
+            const playerSum = window.pokerData.playerHand.reduce((sum, card) =&gt; sum + card.value, 0);
+            const computerSum = window.pokerData.computerHand.reduce((sum, card) =&gt; sum + card.value, 0);
+            
+            document.getElementById('computerSum').textContent = `סכום: ${computerSum}`;
+            
+            let result = '';
+            let moneyChange = 0;
+            
+            if (playerSum &gt; computerSum) {
+                moneyChange = 20;
+                result = `🎉 זכית! (${playerSum} נגד ${computerSum}) +${moneyChange}₪`;
+            } else if (computerSum &gt; playerSum) {
+                moneyChange = -20;
+                result = `❌ הפסדת (${playerSum} נגד ${computerSum}) ${moneyChange}₪`;
+            } else {
+                result = `🤝 תיקו! (${playerSum} נגד ${computerSum})`;
+            }
+            
+            window.pokerData.money += moneyChange;
+            if (window.pokerData.money &lt; 0) window.pokerData.money = 0;
+            
+            document.getElementById('pokerResult').textContent = result;
+            document.getElementById('pokerMoney').textContent = window.pokerData.money;
+            document.getElementById('playPokerBtn').style.display = 'none';
+            
+            if (window.pokerData.money &lt;= 0) {
+                setTimeout(() =&gt; {
+                    alert('נגמר לך הכסף! המשחק הסתיים');
+                    window.pokerData.money = 100;
+                    document.getElementById('pokerMoney').textContent = '100';
+                }, 1500);
+            }
+        }
+
+        // טאקי
+        function newTaki() {
+            const colors = ['🔴', '🔵', '🟡', '🟢'];
+            const numbers = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
+            
+            window.takiData = {
+                playerCards: [],
+                topCard: {color: '🔴', value: '7'},
+                deckCount: 50
+            };
+            
+            for (let i = 0; i &lt; 7; i++) {
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const value = numbers[Math.floor(Math.random() * numbers.
+
+
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>משחקים דיגיטליים לילדים</title>
+    <link href="./משחקים דיגיטליים לילדים_files/css2" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Rubik', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        header {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            text-align: center;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: white;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: white;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 40px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .game {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .game-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .game-title {
+            font-size: 1.4em;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .game-description {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: white;
+            background: rgba(0,0,0,0.1);
+        }
+
+        .game-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .close {
+            color: #aaa;
+            float: left;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            
+            .game-container {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                padding: 20px 10px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 2% auto;
+                padding: 20px;
+            }
+        }
+    </style>
+
+
+    <header>
+        <h1>🎮 משחקים דיגיטליים לילדים</h1>
+        <p class="subtitle">בואו נשחק ונלמד ביחד!</p>
+    </header>
+
+    <div class="game-container">
+        <div class="game" onclick="showGame(&#39;memory&#39;)" style="opacity: 1; transform: translateY(0px); transition: 0.5s;">
+            <div class="game-icon">🧠</div>
+            <div class="game-title">משחק זיכרון</div>
+            <div class="game-description">מצאו את הזוגות הזהים ושפרו את הזיכרון</div>
+        </div>
+
+        <div class="game" onclick="showGame(&#39;puzzle&#39;)" style="opacity: 1; transform: translateY(0px); transition: 0.5s;">
+            <div class="game-icon">🧩</div>
+            <div class="game-title">פאזל</div>
+            <div class="game-description">הרכיבו תמונות יפות במשחק פאזל דיגיטלי</div>
+        </div>
+
+        <div class="game" onclick="showGame(&#39;monopoly&#39;)" style="opacity: 1; transform: translateY(0px); transition: 0.5s;">
+            <div class="game-icon">🏠</div>
+            <div class="game-title">מונופול</div>
+            <div class="game-description">משחק הנכסים הקלאסי בגרסה דיגיטלית</div>
+        </div>
+
+        <div class="game" onclick="showGame(&#39;rummikub&#39;)" style="opacity: 1; transform: translateY(0px); transition: 0.5s;">
+            <div class="game-icon">🎯</div>
+            <div class="game-title">רמיקוב</div>
+            <div class="game-description">שחקו במשחק הקלפים הישראלי הפופולרי</div>
+        </div>
+
+        <div class="game" onclick="showGame(&#39;solitaire&#39;)" style="opacity: 1; transform: translateY(0px); transition: 0.5s;">
+            <div class="game-icon">♠️</div>
+            <div class="game-title">סוליטר</div>
+            <div class="game-description">משחק הקלפים הקלאסי לשחקן יחיד</div>
+        </div>
+
+        <div class="game" onclick="showGame(&#39;bingo&#39;)" style="opacity: 1; transform: translateY(0px); transition: 0.5s;">
+            <div class="game-icon">🎲</div>
+            <div class="game-title">בינגו</div>
+            <div class="game-description">שחקו בינגו דיגיטלי ונסו לזכות</div>
+        </div>
+
+        <div class="game" onclick="showGame(&#39;cards&#39;)" style="opacity: 1; transform: translateY(0px); transition: 0.5s;">
+            <div class="game-icon">🃏</div>
+            <div class="game-title">קלפים</div>
+            <div class="game-description">משחקי קלפים שונים ומגוונים</div>
+        </div>
+
+        <div class="game" onclick="showGame(&#39;poker&#39;)" style="opacity: 1; transform: translateY(0px); transition: 0.5s;">
+            <div class="game-icon">♥️</div>
+            <div class="game-title">פוקר</div>
+            <div class="game-description">משחק הפוקר המפורסם בגרסה מותאמת לילדים</div>
+        </div>
+
+        <div class="game" onclick="showGame(&#39;taki&#39;)" style="opacity: 1; transform: translateY(0px); transition: 0.5s;">
+            <div class="game-icon">🌈</div>
+            <div class="game-title">טאקי</div>
+            <div class="game-description">המשחק הישראלי האהוב על כולם</div>
+        </div>
+
+        <div class="game" onclick="showGame(&#39;war&#39;)" style="opacity: 1; transform: translateY(0px); transition: 0.5s;">
+            <div class="game-icon">⚔️</div>
+            <div class="game-title">מלחמה</div>
+            <div class="game-description">משחק קלפים פשוט ומהיר</div>
+        </div>
+    </div>
+
+    <!-- Modal for games -->
+    <div id="gameModal" class="game-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">×</span>
+            <div id="gameContent"></div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>© 2024 משחקים דיגיטליים לילדים - כל הזכויות שמורות</p>
+        <p>נוצר במיוחד לחוויית משחק בטוחה ומהנה</p>
+    </div>
+
+    <script>
+        // פונקציות בסיסיות
+        function closeModal() {
+            document.getElementById('gameModal').style.display = 'none';
+        }
+
+        function showGame(gameType) {
+            document.getElementById('gameModal').style.display = 'block';
+            const gameContent = document.getElementById('gameContent');
+            
+            switch(gameType) {
+                case 'memory':
+                    gameContent.innerHTML = `
+                        <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">🧠 משחק זיכרון</h2>
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <span>זוגות שנמצאו: <span id="pairs">0</span>/8</span>
+                            <span style="margin-right: 20px;">צעדים: <span id="moves">0</span></span>
+                        </div>
+                        <div id="memoryBoard" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 400px; margin: 20px auto;"></div>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button class="btn" onclick="startMemory()">משחק חדש</button>
+                        </div>
+                    `;
+                case 'puzzle':
+                    gameContent.innerHTML = `
+                        <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">🧩 פאזל מספרים</h2>
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            צעדים: <span id="puzzleMoves">0</span>
+                        </div>
+                        <div id="puzzleBoard" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; max-width: 300px; margin: 20px auto; background: #333;"></div>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button class="btn" onclick="shufflePuzzle()">ערבב פאזל</button>
+                        </div>
+                    `;
+                    initPuzzle();
+                    break;
+
+                case 'monopoly':
+                    gameContent.innerHTML = `
+                        <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">🏠 מונופול</h2>
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            כסף: <span id="money">1500</span>₪ | נכסים: <span id="properties">0</span>
+                        </div>
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <div id="diceResult" style="font-size: 3em; margin: 20px 0;">🎲🎲</div>
+                            <div id="currentPosition" style="font-size: 1.2em;">עמדה נוכחית: התחלה</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <button class="btn" onclick="rollDice()">זרוק קוביות</button>
+                            <button class="btn" onclick="newMonopoly()">משחק חדש</button>
+                        </div>
+                        <div id="monopolyMessage" style="text-align: center; margin-top: 20px; padding: 10px; background: #f0f0f0; border-radius: 10px;"></div>
+                    `;
+                    newMonopoly();
+                    break;
+
+                case 'rummikub':
+                    gameContent.innerHTML = `
+                        <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">🎯 רמיקוב</h2>
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            אריחים נבחרו: <span id="selectedTiles">0</span> | ניקוד: <span id="rummikubScore">0</span>
+                        </div>
+                        <div id="rummikubBoard" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; max-width: 500px; margin: 20px auto;"></div>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button class="btn" onclick="newRummikub()">משחק חדש</button>
+                            <button class="btn" onclick="clearSelection()">נקה בחירה</button>
+                        </div>
+                    `;
+                    newRummikub();
+                    break;
+
+                case 'solitaire':
+                    gameContent.innerHTML = `
+                        <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">♠️ סוליטר</h2>
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            קלפים שנותרו: <span id="cardsLeft">52</span>
+                        </div>
+                        <div style="text-align: center;">
+                            <div id="currentCard" onclick="drawCard()" style="width: 120px; height: 160px; background: #1e3a8a; color: white; border-radius: 15px; display: flex; align-items: center; justify-content: center; margin: 20px auto; font-size: 1.2em; cursor: pointer; border: 3px solid #333;">
+                                לחץ לחלוק קלף
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button class="btn" onclick="newSolitaire()">משחק חדש</button>
+                        </div>
+                        <div id="solitaireMessage" style="text-align: center; margin-top: 20px; font-weight: bold;"></div>
+                    `;
+                    newSolitaire();
+                    break;
+
+                case 'cards':
+                    gameContent.innerHTML = `
+                        <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">🃏 משחק קלפים</h2>
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            ניקוד: <span id="cardScore">0</span> | זמן: <span id="cardTime">0</span>s
+                        </div>
+                        <div id="cardGame" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; max-width: 400px; margin: 20px auto;"></div>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button class="btn" onclick="newCardGame()">משחק חדש</button>
+                        </div>
+                    `;
+                    newCardGame();
+                    break;
+
+                case 'poker':
+                    gameContent.innerHTML = `
+                        <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">♥️ פוקר</h2>
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            הכסף שלך: <span id="pokerMoney">100</span>₪
+                        </div>
+                        <div style="display: flex; justify-content: space-around; margin: 30px 0;">
+                            <div style="text-align: center;">
+                                <h3>היד שלך:</h3>
+                                <div id="playerHand" style="display: flex; gap: 5px; margin-top: 10px;"></div>
+                                <div id="playerSum" style="margin-top: 10px; font-weight: bold;"></div>
+                            </div>
+                            <div style="text-align: center;">
+                                <h3>יד המחשב:</h3>
+                                <div id="computerHand" style="display: flex; gap: 5px; margin-top: 10px;"></div>
+                                <div id="computerSum" style="margin-top: 10px; font-weight: bold;"></div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin: 20px 0;">
+                            <button class="btn" onclick="dealCards()">חלק קלפים</button>
+                            <button class="btn" onclick="playPoker()" id="playPokerBtn" style="display: none;">גלה ושחק</button>
+                        </div>
+                        <div id="pokerResult" style="text-align: center; font-size: 1.3em; font-weight: bold; margin-top: 20px;"></div>
+                    `;
+                    newPoker();
+                    break;
+
+                case 'taki':
+                    gameContent.innerHTML = `
+                        <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">🌈 טאקי</h2>
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            הקלף העליון: <span id="topCard" style="font-size: 2em; padding: 10px; background: white; border-radius: 10px; border: 2px solid #333;">🔴7</span>
+                        </div>
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            הקלפים שלך (<span id="cardCount">7</span>):
+                        </div>
+                        <div id="playerCards" style="display: flex; justify-content: center; gap: 5px; margin: 20px 0; flex-wrap: wrap; min-height: 80px;"></div>
+                        <div style="text-align: center; margin: 20px 0;">
+                            <button class="btn" onclick="drawTakiCard()">משוך קלף</button>
+                            <button class="btn" onclick="newTaki()">משחק חדש</button>
+                        </div>
+                        <div id="takiMessage" style="text-align: center; margin-top: 20px; font-weight: bold; color: #667eea;"></div>
+                    `;
+                    newTaki();
+                    break;
+                    
+                case 'bingo':
+                    gameContent.innerHTML = `
+                        <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">🎲 בינגו</h2>
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            מספר נוכחי: <span id="currentNumber" style="font-size: 2.5em; color: #ff6b6b; font-weight: bold;">--</span>
+                        </div>
+                        <div id="bingoBoard" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; max-width: 300px; margin: 20px auto;"></div>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button class="btn" onclick="drawNumber()">הגרל מספר</button>
+                            <button class="btn" onclick="newBingo()">משחק חדש</button>
+                        </div>
+                        <div id="bingoMessage" style="text-align: center; margin-top: 20px; font-weight: bold; color: #667eea;"></div>
+                    `;
+                    newBingo();
+                    break;
+                    
+                case 'war':
+                    gameContent.innerHTML = `
+                        <h2 style="text-align: center; color: #667eea; margin-bottom: 20px;">⚔️ מלחמת קלפים</h2>
+                        <div style="display: flex; justify-content: space-around; margin-bottom: 20px; font-size: 1.2em;">
+                            <div><strong>השחקן:</strong> <span id="playerScore">26</span> קלפים</div>
+                            <div><strong>המחשב:</strong> <span id="computerScore">26</span> קלפים</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-around; align-items: center; margin: 40px 0;">
+                            <div style="text-align: center;">
+                                <div style="margin-bottom: 10px; font-weight: bold;">הקלף שלך:</div>
+                                <div id="playerCard" style="width: 90px; height: 120px; background: white; border: 3px solid #333; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.3em; margin: 0 auto; font-weight: bold;">?</div>
+                            </div>
+                            <div style="text-align: center; font-size: 2.5em; font-weight: bold; color: #ff6b6b;">⚔️</div>
+                            <div style="text-align: center;">
+                                <div style="margin-bottom: 10px; font-weight: bold;">קלף המחשב:</div>
+                                <div id="computerCard" style="width: 90px; height: 120px; background: white; border: 3px solid #333; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.3em; margin: 0 auto; font-weight: bold;">?</div>
+                            </div>
+                        </div>
+                        <div style="text-align: center;">
+                            <button class="btn" onclick="playWar()" style="font-size: 1.2em; padding: 15px 30px;">⚔️ קרב!</button>
+                            <button class="btn" onclick="newWar()">משחק חדש</button>
+                        </div>
+                        <div id="warResult" style="text-align: center; margin-top: 25px; font-size: 1.4em; font-weight: bold; min-height: 30px;"></div>
+                    `;
+                    newWar();
+                    break;
+                    
+                default:
+                    gameContent.innerHTML = `
+                        <h2 style="text-align: center; color: #667eea;">🚧 ${gameType}</h2>
+                        <p style="text-align: center; margin: 20px 0;">המשחק בפיתוח! בקרוב יהיה זמין</p>
+                        <div style="text-align: center;">
+                            <button class="btn" onclick="closeModal()">חזור</button>
+                        </div>
+                    `;
+            }
+        }
+
+        // משחק זיכרון
+        function startMemory() {
+            const emojis = ['🐱', '🐶', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼'];
+            const cards = [...emojis, ...emojis];
+            cards.sort(() => Math.random() - 0.5);
+
+            let flippedCards = [];
+            let matchedPairs = 0;
+            let moves = 0;
+
+            const board = document.getElementById('memoryBoard');
+            board.innerHTML = '';
+
+            cards.forEach((emoji, index) => {
+                const card = document.createElement('div');
+                card.style.cssText = `
+                    aspect-ratio: 1;
+                    background: linear-gradient(45deg, #667eea, #764ba2);
+                    border-radius: 10px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 2em;
+                    color: white;
+                    transition: all 0.3s ease;
+                    user-select: none;
+                `;
+                card.innerHTML = '?';
+                card.dataset.emoji = emoji;
+                
+                card.addEventListener('click', () => {
+                    if (flippedCards.length < 2 && !card.classList.contains('flipped') && !card.classList.contains('matched')) {
+                        card.classList.add('flipped');
+                        card.innerHTML = emoji;
+                        card.style.background = 'white';
+                        card.style.color = '#333';
+                        card.style.border = '2px solid #667eea';
+                        flippedCards.push(card);
+
+                        if (flippedCards.length === 2) {
+                            moves++;
+                            document.getElementById('moves').textContent = moves;
+
+                            if (flippedCards[0].dataset.emoji === flippedCards[1].dataset.emoji) {
+                                flippedCards[0].classList.add('matched');
+                                flippedCards[1].classList.add('matched');
+                                flippedCards[0].style.background = '#48bb78';
+                                flippedCards[1].style.background = '#48bb78';
+                                flippedCards[0].style.color = 'white';
+                                flippedCards[1].style.color = 'white';
+                                matchedPairs++;
+                                document.getElementById('pairs').textContent = matchedPairs;
+                                flippedCards = [];
+
+                                if (matchedPairs === 8) {
+                                    setTimeout(() => {
+                                        alert(`🎉 כל הכבוד! סיימת את המשחק ב-${moves} צעדים!`);
+                                    }, 500);
+                                }
+                            } else {
+                                setTimeout(() => {
+                                    flippedCards.forEach(card => {
+                                        card.classList.remove('flipped');
+                                        card.innerHTML = '?';
+                                        card.style.background = 'linear-gradient(45deg, #667eea, #764ba2)';
+                                        card.style.color = 'white';
+                                        card.style.border = 'none';
+                                    });
+                                    flippedCards = [];
+                                }, 1000);
+                            }
+                        }
+                    }
+                });
+
+                board.appendChild(card);
+            });
+
+            document.getElementById('pairs').textContent = '0';
+            document.getElementById('moves').textContent = '0';
+        }
+
+        // משחק בינגו
+        function newBingo() {
+            window.bingoData = {
+                drawnNumbers: [],
+                playerCard: []
+            };
+            
+            const board = document.getElementById('bingoBoard');
+            board.innerHTML = '';
+            
+            // יצירת כרטיס בינגו
+            for (let i = 0; i < 25; i++) {
+                let number;
+                do {
+                    number = Math.floor(Math.random() * 75) + 1;
+                } while (window.bingoData.playerCard.includes(number));
+                
+                window.bingoData.playerCard.push(number);
+                
+                const cell = document.createElement('div');
+                cell.style.cssText = `
+                    aspect-ratio: 1;
+                    background: white;
+                    border: 2px solid #ddd;
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                    cursor: pointer;
+                    font-size: 1.1em;
+                    transition: all 0.3s ease;
+                `;
+                
+                if (i === 12) { // מרכז
+                    cell.textContent = 'FREE';
+                    cell.style.background = '#48bb78';
+                    cell.style.color = 'white';
+                } else {
+                    cell.textContent = number;
+                    cell.addEventListener('click', () => markCell(cell, number));
+                }
+                
+                board.appendChild(cell);
+            }
+            
+            document.getElementById('currentNumber').textContent = '--';
+            document.getElementById('bingoMessage').textContent = 'לחץ "הגרל מספר" להתחלה!';
+        }
+
+        function drawNumber() {
+            if (window.bingoData.drawnNumbers.length >= 75) {
+                document.getElementById('bingoMessage').textContent = 'כל המספרים הוגרלו!';
+                return;
+            }
+            
+            let number;
+            do {
+                number = Math.floor(Math.random() * 75) + 1;
+            } while (window.bingoData.drawnNumbers.includes(number));
+            
+            window.bingoData.drawnNumbers.push(number);
+            document.getElementById('currentNumber').textContent = number;
+            
+            if (window.bingoData.playerCard.includes(number)) {
+                document.getElementById('bingoMessage').textContent = `🎯 יש לך את המספר ${number}! לחץ עליו`;
+            } else {
+                document.getElementById('bingoMessage').textContent = `המספר ${number} לא בכרטיס שלך`;
+            }
+        }
+
+        function markCell(cell, number) {
+            if (window.bingoData.drawnNumbers.includes(number)) {
+                if (cell.style.background === 'rgb(72, 187, 120)') {
+                    cell.style.background = 'white';
+                    cell.style.color = 'black';
+                } else {
+                    cell.style.background = '#48bb78';
+                    cell.style.color = 'white';
+                }
+                checkBingo();
+            } else {
+                document.getElementById('bingoMessage').textContent = `המספר ${number} עדיין לא הוגרל!`;
+            }
+        }
+
+        function checkBingo() {
+            const cells = document.querySelectorAll('#bingoBoard div');
+            const marked = Array.from(cells).map(cell => 
+                cell.style.background === 'rgb(72, 187, 120)' || cell.textContent === 'FREE'
+            );
+            
+            // בדיקת שורות
+            for (let i = 0; i < 5; i++) {
+                if (marked.slice(i * 5, (i + 1) * 5).every(Boolean)) {
+                    setTimeout(() => alert('🎉 בינגו! זכית בשורה!'), 100);
+                    return;
+                }
+            }
+            
+            // בדיקת עמודות
+            for (let i = 0; i < 5; i++) {
+                if ([0, 1, 2, 3, 4].every(row => marked[row * 5 + i])) {
+                    setTimeout(() => alert('🎉 בינגו! זכית בעמודה!'), 100);
+                    return;
+                }
+            }
+            
+            // בדיקת אלכסונים
+            if ([0, 6, 12, 18, 24].every(i => marked[i]) || [4, 8, 12, 16, 20].every(i => marked[i])) {
+                setTimeout(() => alert('🎉 בינגו! זכית באלכסון!'), 100);
+            }
+        }
+
+        // משחק מלחמה
+        function newWar() {
+            window.warData = {
+                playerCards: 26,
+                computerCards: 26,
+                rounds: 0
+            };
+            
+            document.getElementById('playerScore').textContent = '26';
+            document.getElementById('computerScore').textContent = '26';
+            document.getElementById('playerCard').textContent = '?';
+            document.getElementById('computerCard').textContent = '?';
+            document.getElementById('warResult').textContent = '';
+        }
+
+        function playWar() {
+            if (window.warData.playerCards === 0 || window.warData.computerCards === 0) {
+                return;
+            }
+            
+            const suits = ['♠️', '♥️', '♦️', '♣️'];
+            const values = [
+                {name: 'A', value: 1}, {name: '2', value: 2}, {name: '3', value: 3},
+                {name: '4', value: 4}, {name: '5', value: 5}, {name: '6', value: 6},
+                {name: '7', value: 7}, {name: '8', value: 8}, {name: '9', value: 9},
+                {name: '10', value: 10}, {name: 'J', value: 11}, {name: 'Q', value: 12}, {name: 'K', value: 13}
+            ];
+            
+            const playerCard = values[Math.floor(Math.random() * values.length)];
+            const computerCard = values[Math.floor(Math.random() * values.length)];
+            const playerSuit = suits[Math.floor(Math.random() * suits.length)];
+            const computerSuit = suits[Math.floor(Math.random() * suits.length)];
+            
+            document.getElementById('playerCard').innerHTML = `${playerSuit}<br><span style="font-size: 1.5em;">${playerCard.name}</span>`;
+            document.getElementById('computerCard').innerHTML = `${computerSuit}<br><span style="font-size: 1.5em;">${computerCard.name}</span>`;
+            
+            let result = '';
+            
+            if (playerCard.value > computerCard.value) {
+                window.warData.playerCards++;
+                window.warData.computerCards--;
+                result = `🎉 זכית בסיבוב! (${playerCard.name} מנצח ${computerCard.name})`;
+            } else if (computerCard.value > playerCard.value) {
+                window.warData.computerCards++;
+                window.warData.playerCards--;
+                result = `❌ המחשב זכה בסיבוב (${computerCard.name} מנצח ${playerCard.name})`;
+            } else {
+                result = `🤝 תיקו! (${playerCard.name} נגד ${computerCard.name})`;
+            }
+            
+            window.warData.rounds++;
+            document.getElementById('playerScore').textContent = window.warData.playerCards;
+            document.getElementById('computerScore').textContent = window.warData.computerCards;
+            document.getElementById('warResult').textContent = result;
+            
+            if (window.warData.playerCards === 0) {
+                setTimeout(() => {
+                    alert(`😞 הפסדת אחרי ${window.warData.rounds} סיבובים!`);
+                }, 1500);
+            } else if (window.warData.computerCards === 0) {
+                setTimeout(() => {
+                    alert(`🎉 זכית אחרי ${window.warData.rounds} סיבובים!`);
+                }, 1500);
+            }
+        }
+
+        // אירועים
+        window.onclick = function(event) {
+            const modal = document.getElementById('gameModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // אנימציה בטעינה
+        document.addEventListener('DOMContentLoaded', function() {
+            const games = document.querySelectorAll('.game');
+            games.forEach((game, index) => {
+                game.style.opacity = '0';
+                game.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    game.style.transition = 'all 0.5s ease';
+                    game.style.opacity = '1';
+                    game.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+
+</body></html>

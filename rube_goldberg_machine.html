@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rube Goldberg Machine</title>
+    <style>
+        :root {
+            --base-speed: 0.6s;
+            --domino-speed: calc(var(--base-speed) * 1.2);
+            --domino-hit-delay: calc(var(--domino-speed) * 0.3);
+            --ball-speed: calc(var(--base-speed) * 2);
+            --car-speed: calc(var(--base-speed) * 3);
+            --final-ball-speed: calc(var(--base-speed) * 2.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f3e8, #e8e6d3);
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+
+        .machine-container {
+            position: relative;
+            width: 500vw;
+            height: 100vh;
+            transition: transform calc(var(--base-speed) * 15) ease-in-out;
+        }
+
+        .machine-container.running {
+            transform: translateX(-80%);
+        }
+
+        .surface {
+            position: absolute;
+            bottom: 20%;
+            width: 100%;
+            height: 4px;
+            background: #8B4513;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Dominos */
+        .domino {
+            position: absolute;
+            width: 12px;
+            height: 60px;
+            background: linear-gradient(45deg, #fff, #f0f0f0);
+            border: 2px solid #333;
+            border-radius: 2px;
+            bottom: calc(20% + 4px);
+            transform-origin: bottom right;
+            transition: transform var(--domino-speed) ease-out;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .domino::before {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: #333;
+            border-radius: 50%;
+            transform: translateX(-50%);
+        }
+
+        .domino::after {
+            content: '';
+            position: absolute;
+            bottom: 20%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: #333;
+            border-radius: 50%;
+            transform: translateX(-50%);
+        }
+
+        .domino-1 { left: 5%; transition-delay: 0s; }
+        .domino-2 { left: 8%; transition-delay: var(--domino-hit-delay); }
+        .domino-3 { left: 11%; transition-delay: calc(var(--domino-hit-delay) * 2); }
+        .domino-4 { left: 14%; transition-delay: calc(var(--domino-hit-delay) * 3); }
+        .domino-5 { left: 17%; transition-delay: calc(var(--domino-hit-delay) * 4); }
+
+        .running .domino {
+            transform: rotate(75deg);
+        }
+
+        /* Pendulum Ball */
+        .pendulum {
+            position: absolute;
+            left: 20%;
+            top: 10%;
+            width: 200px;
+            height: 200px;
+            transform-origin: top center;
+            transition: transform var(--ball-speed) cubic-bezier(0.25, 1.56, 0.75, 1);
+            transition-delay: calc(var(--domino-hit-delay) * 5);
+        }
+
+        .pendulum-string {
+            width: 2px;
+            height: 150px;
+            background: #654321;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .pendulum-ball {
+            width: 30px;
+            height: 30px;
+            background: radial-gradient(circle at 30% 30%, #90EE90, #228B22);
+            border-radius: 50%;
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.4);
+        }
+
+        .running .pendulum {
+            transform: rotate(-45deg);
+        }
+
+        /* Car */
+        .car {
+            position: absolute;
+            left: 35%;
+            bottom: calc(20% + 4px);
+            width: 80px;
+            height: 40px;
+            transition: transform var(--car-speed) ease-out;
+            transition-delay: calc(var(--domino-hit-delay) * 5 + var(--ball-speed) * 0.4);
+        }
+
+        .car-body {
+            width: 80px;
+            height: 25px;
+            background: linear-gradient(45deg, #FF4500, #FF6347);
+            border-radius: 10px 10px 5px 5px;
+            position: relative;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .car-windshield {
+            position: absolute;
+            top: -8px;
+            left: 15px;
+            width: 30px;
+            height: 15px;
+            background: rgba(173, 216, 230, 0.8);
+            border-radius: 8px 8px 0 0;
+            border: 1px solid #333;
+        }
+
+        .wheel {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #333, #111);
+            border-radius: 50%;
+            bottom: -10px;
+            border: 2px solid #555;
+        }
+
+        .wheel-front { right: 5px; }
+        .wheel-back { left: 5px; }
+
+        .wheel::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            background: #888;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .running .car {
+            transform: translateX(300px);
+        }
+
+        .running .wheel {
+            animation: spin var(--car-speed) linear;
+            animation-delay: calc(var(--domino-hit-delay) * 5 + var(--ball-speed) * 0.4);
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(720deg); }
+        }
+
+        /* 8-Ball */
+        .eight-ball {
+            position: absolute;
+            left: 55%;
+            bottom: calc(20% + 30px);
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle at 30% 30%, #333, #000);
+            border-radius: 50%;
+            transition: all calc(var(--car-speed) * 1.5) cubic-bezier(0.25, 1.56, 0.75, 1);
+            transition-delay: calc(var(--domino-hit-delay) * 5 + var(--ball-speed) * 0.4 + var(--car-speed) * 0.7);
+            box-shadow: 3px 3px 10px rgba(0,0,0,0.5);
+        }
+
+        .eight-ball::before {
+            content: '8';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            background: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: black;
+        }
+
+        .running .eight-ball {
+            transform: translateX(400px) translateY(-100px) rotate(1080deg);
+        }
+
+        /* Second set of dominos */
+        .domino-second {
+            left: 75%;
+            transition-delay: calc(var(--domino-hit-delay) * 5 + var(--ball-speed) * 0.4 + var(--car-speed) * 0.7 + var(--car-speed) * 1.5 * 0.8);
+        }
+        .domino-6 { left: 75%; }
+        .domino-7 { left: 78%; transition-delay: calc(var(--domino-hit-delay) * 6 + var(--ball-speed) * 0.4 + var(--car-speed) * 0.7 + var(--car-speed) * 1.5 * 0.8); }
+        .domino-8 { left: 81%; transition-delay: calc(var(--domino-hit-delay) * 7 + var(--ball-speed) * 0.4 + var(--car-speed) * 0.7 + var(--car-speed) * 1.5 * 0.8); }
+
+        /* Final Ball */
+        .final-ball {
+            position: absolute;
+            left: 85%;
+            bottom: calc(20% + 30px);
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle at 30% 30%, #FF69B4, #DC143C);
+            border-radius: 50%;
+            transition: all var(--final-ball-speed) cubic-bezier(0.25, 1.56, 0.75, 1);
+            transition-delay: calc(var(--domino-hit-delay) * 8 + var(--ball-speed) * 0.4 + var(--car-speed) * 0.7 + var(--car-speed) * 1.5 * 0.8);
+            box-shadow: 3px 3px 15px rgba(0,0,0,0.4);
+        }
+
+        .final-ball::before {
+            content: '';
+            position: absolute;
+            top: 20%;
+            left: 20%;
+            width: 15px;
+            height: 15px;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+        }
+
+        .running .final-ball {
+            transform: translateX(200px) scale(1.5);
+            animation: bounce var(--final-ball-speed) ease-out;
+            animation-delay: calc(var(--domino-hit-delay) * 8 + var(--ball-speed) * 0.4 + var(--car-speed) * 0.7 + var(--car-speed) * 1.5 * 0.8);
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(0px) scale(1); }
+            50% { transform: translateX(100px) translateY(-50px) scale(1.2); }
+            100% { transform: translateX(200px) scale(1.5); }
+        }
+
+        /* Platform sections */
+        .platform {
+            position: absolute;
+            bottom: 20%;
+            height: 10px;
+            background: linear-gradient(45deg, #8B4513, #A0522D);
+            border-radius: 5px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+        }
+
+        .platform-1 { left: 4%; width: 15%; }
+        .platform-2 { left: 32%; width: 25%; }
+        .platform-3 { left: 72%; width: 20%; }
+
+        /* Controls */
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+        }
+
+        .start-button {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .start-button:active {
+            transform: translateY(0);
+        }
+
+        /* Background decorations */
+        .cloud {
+            position: absolute;
+            background: white;
+            border-radius: 50px;
+            opacity: 0.8;
+        }
+
+        .cloud-1 {
+            top: 15%;
+            left: 10%;
+            width: 80px;
+            height: 30px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .cloud-2 {
+            top: 25%;
+            right: 20%;
+            width: 100px;
+            height: 40px;
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="machine-container" id="machine">
+        <!-- Background clouds -->
+        <div class="cloud cloud-1"></div>
+        <div class="cloud cloud-2"></div>
+        
+        <!-- Platforms -->
+        <div class="platform platform-1"></div>
+        <div class="platform platform-2"></div>
+        <div class="platform platform-3"></div>
+        
+        <!-- Main surface -->
+        <div class="surface"></div>
+        
+        <!-- First set of dominos -->
+        <div class="domino domino-1"></div>
+        <div class="domino domino-2"></div>
+        <div class="domino domino-3"></div>
+        <div class="domino domino-4"></div>
+        <div class="domino domino-5"></div>
+        
+        <!-- Pendulum -->
+        <div class="pendulum">
+            <div class="pendulum-string">
+                <div class="pendulum-ball"></div>
+            </div>
+        </div>
+        
+        <!-- Car -->
+        <div class="car">
+            <div class="car-body">
+                <div class="car-windshield"></div>
+            </div>
+            <div class="wheel wheel-front"></div>
+            <div class="wheel wheel-back"></div>
+        </div>
+        
+        <!-- 8-Ball -->
+        <div class="eight-ball"></div>
+        
+        <!-- Second set of dominos -->
+        <div class="domino domino-6 domino-second"></div>
+        <div class="domino domino-7"></div>
+        <div class="domino domino-8"></div>
+        
+        <!-- Final Ball -->
+        <div class="final-ball"></div>
+    </div>
+    
+    <div class="controls">
+        <button class="start-button" id="startButton">🎯 Start Chain Reaction</button>
+    </div>
+
+    <script>
+        const machine = document.getElementById('machine');
+        const startButton = document.getElementById('startButton');
+        
+        startButton.addEventListener('click', () => {
+            if (machine.classList.contains('running')) {
+                // Reset animation
+                machine.classList.remove('running');
+                startButton.textContent = '🎯 Start Chain Reaction';
+                
+                // Force reflow to reset animations
+                setTimeout(() => {
+                    machine.offsetHeight;
+                }, 50);
+            } else {
+                // Start animation
+                machine.classList.add('running');
+                startButton.textContent = '🔄 Reset Machine';
+            }
+        });
+        
+        // Auto-reset after animation completes
+        machine.addEventListener('transitionend', (e) => {
+            if (e.target === machine && machine.classList.contains('running')) {
+                setTimeout(() => {
+                    machine.classList.remove('running');
+                    startButton.textContent = '🎯 Start Chain Reaction';
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>
